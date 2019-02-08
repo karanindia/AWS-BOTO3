@@ -1,0 +1,3 @@
+An IAM group is a collection of IAM users. Groups let you specify permissions for multiple users, which can make it easier to manage the permissions for those users.
+
+"iam-group.py" is a python boto3 script for managing the aws iam groups remotley without logging into the AWS Console.
