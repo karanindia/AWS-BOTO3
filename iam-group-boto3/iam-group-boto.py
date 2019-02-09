@@ -12,7 +12,7 @@ import boto3
 from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError, EndpointConnectionError
 
 #Clear the screen
-#os.system('clear')
+os.system('clear')
 
 #Terminal Color Variables
 red='\033[31m'
@@ -21,6 +21,8 @@ blue='\033[34m'
 orange='\033[33m'
 end='\033[0m'
 
+#Create object for boto3 client 'iam'
+client = boto3.client('iam')
 
 #Function to list out all the arguments
 def HELP():
@@ -28,22 +30,106 @@ def HELP():
     print("Description: A BOTO3 wrapper script for managing the IAM Groups.")
     print("")
     print("--help\t\t\tList all the available arguments")
-    print("--list-iam-groups\tList all the available IAM Groups")
     print("--aws-auth\t\tCreate AWS Authentication Credentials")
+    print("--create-group\t\tCreate AWS IAM Group with Policy attach")
+    print("--list-iam-groups\tList all the available IAM Groups")
+    print("--list-policies\t\tList all the avilablw AWS Managed and Local Policies")
 
+
+#Function to List All the AWS Managed and Local Policies
+def list_policies():
+
+    try:
+        #List out all the AWS Managed services
+        response1 = client.list_policies(Scope='AWS')
+        response2 = client.list_policies(Scope='Local')
+
+        #Create AWS Managed Policies csv file
+        with open('/tmp/list_of_policies.csv',mode='w') as csvfile:
+
+            filewriter = csv.writer(csvfile,delimiter=',',quotechar='|',quoting=csv.QUOTE_MINIMAL,lineterminator='\n')
+            filewriter.writerow(['AWS Managed Polocies','Policy ID','ARN'])
+
+            #Loop through the List of AWS Managed Policies
+            for i in response1['Policies']:
+
+                filewriter.writerow([i.get('PolicyName'),i.get('PolicyId'),i.get('Arn')])
+            
+            #Loop through the List of Local Policies
+            filewriter.writerow(['','',''])
+            filewriter.writerow(['Local Policies','Policy ID','ARN'])
+            for k in response2['Policies']:
+
+                filewriter.writerow([k.get('PolicyName'),k.get('PolicyId'),k.get('Arn')])
+
+        csvfile.close()         
+        
+        print("[ {}OK{} ] AWS Managed and Local Policies created successfully : /tmp/list_of_policies.csv".format(green,end))
+
+
+    except NoCredentialsError:
+
+        print("""[ {}Error{} ] Please Configure your AWS Authentication Credentials.
+       Use '--aws-auth' option""".format(red,end))
+
+    except PartialCredentialsError:
+
+        print("""[ {}Error{} ]: Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
+
+    except EndpointConnectionError:
+
+        print("[ {}Error{} ] Please Check your Network Connectivity.".format(red,end))
+
+    except ClientError as error:
+
+        if error.response['Error']['Code'] == 'InvalidClientTokenId':
+            print("""[ {}Error{} ] Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
+
+#Function to Create new group
+def create_new_group(gname,gpolicy):
+
+    try:
+
+        response = client.create_group(GroupName=gname)
+        print("[ {}OK{} ] Group with name {} created successfully.".format(green,end,gname))
+
+    except client.exceptions.EntityAlreadyExistsException:
+
+        print("[ {}Error{} ] Group with name {} already exists".format(red,end,gname))
+
+    except NoCredentialsError:
+
+        print("""[ {}Error{} ] Please Configure your AWS Authentication Credentials.
+       Use '--aws-auth' option""".format(red,end))
+
+    except PartialCredentialsError:
+
+        print("""[ {}Error{} ]: Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
+
+    except EndpointConnectionError:
+
+        print("[ {}Error{} ] Please Check your Network Connectivity.".format(red,end))
+
+    except ClientError as error:
+
+        if error.response['Error']['Code'] == 'InvalidClientTokenId':
+            print("""[ {}Error{} ] Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
 
 #Function to list the IAM Groups
 def list_iam_groups():
 
     try:
 
-        client = boto3.client('iam')
         response = client.list_groups()
         
         #Check the Lenght of the List
         if len(response['Groups']) == 0:
 
-            print("[ {}Error{} ] IAM Group List is Empty. Use '--create-groups' option.".format(red,end))
+            print("[ {}Error{} ] IAM Group List is Empty. Use '--create-group' option.".format(red,end))
         else:
 
             #Creating the csv file for GroupName,GroupID,ARN
@@ -114,10 +200,11 @@ def aws_auth_credentials(accesskeyid,secrectkey,region):
 if __name__ == '__main__':
 
     #Check if argument is passed or not
-    if len(sys.argv) < 2:
+    if len(sys.argv) == 1 or len(sys.argv) == 3:
 
         print("[ {}Error{} ] Two few arguments.Please use --help option.".format(red,end))
     else:
+
 
         if sys.argv[1] == "--help":
 
@@ -135,8 +222,20 @@ if __name__ == '__main__':
             aws_auth_credentials(user_input1,user_input2,user_input3)
 
         elif sys.argv[1] == "--list-iam-groups":
-
             list_iam_groups()
+
+        elif sys.argv[1] == "--create-group":
+
+            print(" ")
+            print("[ {}AWS IAM Group Creation{} ]".format(orange,end))
+            print("==========================")
+            
+            ugroupname = input("Enter the new Group name : ")
+            ugpolicy = input("Enter the Policy name : ")
+            create_new_group(ugroupname,ugpolicy)
+
+        elif sys.argv[1] == "--list-policies":
+            list_policies()
 
         else:
 
