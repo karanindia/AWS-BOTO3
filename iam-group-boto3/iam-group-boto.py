@@ -32,6 +32,7 @@ def HELP():
     print("--help\t\t\tList all the available arguments")
     print("--aws-auth\t\tCreate AWS Authentication Credentials")
     print("--create-group\t\tCreate AWS IAM Group with Policy attach")
+    print("--attach-group-policy\t\tAttach Group Policy to a group")
     print("--list-iam-groups\tList all the available IAM Groups")
     print("--list-policies\t\tList all the avilablw AWS Managed and Local Policies")
 
@@ -88,7 +89,7 @@ def list_policies():
        Use '--aws-auth' option """.format(red,end))
 
 #Function to Create new group
-def create_new_group(gname,gpolicy):
+def create_new_group(gname):
 
     try:
 
@@ -231,11 +232,19 @@ if __name__ == '__main__':
             print("==========================")
             
             ugroupname = input("Enter the new Group name : ")
-            ugpolicy = input("Enter the Policy name : ")
-            create_new_group(ugroupname,ugpolicy)
+            create_new_group(ugroupname)
 
         elif sys.argv[1] == "--list-policies":
             list_policies()
+
+        elif sys.argv[1] == "--attach-group-policy":
+            print("")
+            print("[ {}AWS IAM Attach Group Policy{} ]".format(orange,end))
+            print("===============================")
+
+            user_input4 = input("Enter the Group name : ")
+            user_input5 = input("Enter the Policy name : ")
+            attach_group_policy()
 
         else:
 
