@@ -9,7 +9,7 @@ import sys
 import csv
 from sys import argv
 import boto3
-from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError, EndpointConnectionError
+from botocore.exceptions import ClientError, NoCredentialsError, PartialCredentialsError, EndpointConnectionError, ParamValidationError
 
 #Clear the screen
 os.system('clear')
@@ -32,9 +32,43 @@ def HELP():
     print("--help\t\t\tList all the available arguments")
     print("--aws-auth\t\tCreate AWS Authentication Credentials")
     print("--create-group\t\tCreate AWS IAM Group with Policy attach")
-    print("--attach-group-policy\t\tAttach Group Policy to a group")
+    print("--attach-group-policy\tAttach Group Policy to a group")
     print("--list-iam-groups\tList all the available IAM Groups")
     print("--list-policies\t\tList all the avilablw AWS Managed and Local Policies")
+
+
+#Function to attach the Group Policy
+def attach_group_policy(gname,arnpolicy):
+
+    try:
+        response = client.attach_group_policy(GroupName=gname,PolicyArn=arnpolicy)
+        print("[ {}OK{} ] Policy Arn {} attach to Group {} Successfully".format(green,end,arnpolicy,gname))
+
+    except client.exceptions.NoSuchEntityException:
+        print("[ {}Error{} ] Group name {} does not exists.".format(red,end,gname))
+
+    except ParamValidationError:
+        print("[ {}Error{} ] Arn Validation Error")
+
+    except NoCredentialsError:
+
+        print("""[ {}Error{} ] Please Configure your AWS Authentication Credentials.
+       Use '--aws-auth' option""".format(red,end))
+
+    except PartialCredentialsError:
+
+        print("""[ {}Error{} ]: Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
+
+    except EndpointConnectionError:
+
+        print("[ {}Error{} ] Please Check your Network Connectivity.".format(red,end))
+
+    except ClientError as error:
+
+        if error.response['Error']['Code'] == 'InvalidClientTokenId':
+            print("""[ {}Error{} ] Invalid AWS Authentication Credentials.
+       Use '--aws-auth' option """.format(red,end))
 
 
 #Function to List All the AWS Managed and Local Policies
@@ -42,7 +76,7 @@ def list_policies():
 
     try:
         #List out all the AWS Managed services
-        response1 = client.list_policies(Scope='AWS')
+        response1 = client.list_policies(Scope='All')
         response2 = client.list_policies(Scope='Local')
 
         #Create AWS Managed Policies csv file
@@ -243,8 +277,8 @@ if __name__ == '__main__':
             print("===============================")
 
             user_input4 = input("Enter the Group name : ")
-            user_input5 = input("Enter the Policy name : ")
-            attach_group_policy()
+            user_input5 = input("Enter the Policy Arn : ")
+            attach_group_policy(user_input4,user_input5)
 
         else:
 
